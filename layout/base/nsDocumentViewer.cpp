@@ -2172,6 +2172,7 @@ StyleBackendTypeForDocument(nsIDocument* aDocument, nsIDocShell* aContainer)
   return nsPresContext::StyloEnabled() &&
          aDocument->IsHTMLOrXHTML() &&
          aContainer &&
+         static_cast<nsDocShell*>(aContainer)->WantsStylo() &&
          aContainer->ItemType() == nsIDocShell::typeContent ?
            StyleBackendType::Servo :
            StyleBackendType::Gecko;

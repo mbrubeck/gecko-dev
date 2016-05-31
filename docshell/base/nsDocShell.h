@@ -304,6 +304,9 @@ private:
     JSContext*, nsTArray<dom::ProfileTimelineMarker>&);
 
 public:
+  bool WantsStylo() const { return mWantsStylo; }
+  void SetWantsStylo(bool aWants) { mWantsStylo = aWants; }
+
   // Tell the favicon service that aNewURI has the same favicon as aOldURI.
   static void CopyFavicon(nsIURI* aOldURI,
                           nsIURI* aNewURI,
@@ -1022,6 +1025,7 @@ private:
   nsCString mOriginalUriString;
   nsWeakPtr mOpener;
   mozilla::DocShellOriginAttributes mOriginAttributes;
+  bool mWantsStylo;
 
   // A depth count of how many times NotifyRunToCompletionStart
   // has been called without a matching NotifyRunToCompletionStop.

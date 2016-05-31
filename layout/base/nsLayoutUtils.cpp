@@ -9317,3 +9317,20 @@ nsLayoutUtils::IsTransformed(nsIFrame* aForFrame, nsIFrame* aTopFrame)
   return false;
 }
 
+/* static */ bool
+nsLayoutUtils::AllowsStylo(nsIDocument* aDocument, nsIDocShell* aContainer)
+{
+  nsCString scheme;
+  nsIURI* uri = aDocument->GetDocumentURI();
+  if (!uri ||
+      NS_FAILED(uri->GetScheme(scheme)) ||
+      !(scheme.EqualsLiteral("http") ||
+        scheme.EqualsLiteral("https") ||
+        scheme.EqualsLiteral("file"))) {
+    return false;
+  }
+  return nsPresContext::StyloEnabled() &&
+         aDocument->IsHTMLOrXHTML() &&
+         aContainer &&
+         aContainer->ItemType() == nsIDocShell::typeContent;
+}

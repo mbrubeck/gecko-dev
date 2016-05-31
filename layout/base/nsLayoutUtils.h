@@ -37,6 +37,7 @@
 
 class nsPresContext;
 class nsIContent;
+class nsIDocShell;
 class nsIAtom;
 class nsIScrollableFrame;
 class nsIDOMEvent;
@@ -2830,6 +2831,8 @@ public:
    * a transformed frame is encountered.
    */
   static bool IsTransformed(nsIFrame* aForFrame, nsIFrame* aTopFrame = nullptr);
+
+  static bool AllowsStylo(nsIDocument* aDocument, nsIDocShell* aContainer);
 
 private:
   static uint32_t sFontSizeInflationEmPerLine;

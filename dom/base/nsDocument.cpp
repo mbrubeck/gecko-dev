@@ -261,6 +261,7 @@
 #ifdef MOZ_WEBRTC
 #include "IPeerConnection.h"
 #endif // MOZ_WEBRTC
+#include "mozilla/RestyleManager.h"
 
 using namespace mozilla;
 using namespace mozilla::dom;
@@ -1429,6 +1430,7 @@ static already_AddRefed<mozilla::dom::NodeInfo> nullNodeInfo;
 // ==================================================================
 nsIDocument::nsIDocument()
   : nsINode(nullNodeInfo),
+    mRestyleTime(0),
     mReferrerPolicySet(false),
     mReferrerPolicy(mozilla::net::RP_Default),
     mBlockAllMixedContent(false),
@@ -13620,4 +13622,73 @@ nsIDocument::GetStyleBackendType() const
     return StyleBackendType::Gecko;
   }
   return mPresShell->StyleSet()->BackendType();
+}
+
+bool
+nsIDocument::UsingStylo() const
+{
+  return GetStyleBackendType() == StyleBackendType::Servo;
+}
+
+uint32_t
+nsIDocument::StyloThreads() const
+{
+  return Servo_StyleWorkerThreadCount();
+}
+
+bool
+nsIDocument::AllowsStylo()
+{
+  nsCOMPtr<nsIDocShell> docShell = GetDocShell();
+  return docShell && nsLayoutUtils::AllowsStylo(this, docShell);
+}
+
+uint64_t
+nsIDocument::RestyleTime()
+{
+  if (!mPresShell) {
+    return 0;
+  }
+  if (ServoStyleSet* set = mPresShell->StyleSet()->GetAsServo()) {
+    return set->RestyleTime();
+  }
+  return mRestyleTime;
+}
+
+void
+nsIDocument::UpdateRestyleTime()
+{
+  if (!mPresShell) {
+    return;
+  }
+  nsPresContext* presContext = mPresShell->GetPresContext();
+  if (!presContext) {
+    return;
+  }
+
+  Element* root = GetRootElement();
+  if (!root) {
+    return;
+  }
+
+  RestyleManagerHandle restyleManager = presContext->RestyleManager();
+  if (!restyleManager->IsGecko()) {
+    return;
+  }
+
+  FlushPendingNotifications(Flush_Layout);
+  restyleManager->AsGecko()->PostRestyleEvent(root, eRestyle_Subtree, NS_STYLE_HINT_NONE);
+  PRTime before = PR_Now();
+  FlushPendingNotifications(Flush_Style);
+  PRTime after = PR_Now();
+  mRestyleTime = after - before;
+}
+
+void
+nsIDocument::SetWantsStylo(bool aWants)
+{
+  nsCOMPtr<nsIDocShell> docShell = GetDocShell();
+  if (docShell) {
+    static_cast<nsDocShell*>(docShell.get())->SetWantsStylo(aWants);
+  }
 }
